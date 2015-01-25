@@ -1,0 +1,12 @@
+{
+	"name": "LDRLYTechTest",
+	"version": "0.0.0",
+	"description": "Tech Test for Backend Engineer at LDRLY",
+	"author": "Eric Finlay <enfinlay@gmail.com>",
+    "dependencies": {
+       "express": "4.11.1",
+       "mongodb": "1.4.29",
+       "bunyan": "1.3.2"
+   },
+   "private": true
+}
