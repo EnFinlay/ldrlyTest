@@ -32,21 +32,22 @@ MongoClient.connect(url, function(getMongoErr,mongoConn){
 			res.end('Connection to mongoDB failed, clearly Eric\'s fault.');
 		});
 		
-	app.use( bodyParser.json() ); 
 		app.listen(port);
 
 		return;
 	}
 	
+	// Parse the POST JSON bodies
+	app.use( bodyParser.json()); 
 	
+	// Give all functions access to the database
 	app.use(function(req,res,next){
-	    req.db = db;
-	    next();
+		req.db = mongoConn;
+		next();
 	});
 
 	// Points to routes/index.js, lists valid paths
 	routes(app);
-	
 
 	app.listen(port);
 	console.log('The server started listening on port: '+port);
