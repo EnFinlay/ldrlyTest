@@ -14,7 +14,6 @@ var express = require('express'),
 	app = express(),
 	bodyParser = require('body-parser'),
 	MongoClient = require('mongodb').MongoClient,
-	bunyan = require('bunyan'),
 	routes = require('./routes');
 	
 // DB name: ldrlyTest
