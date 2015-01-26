@@ -18,7 +18,7 @@ var express = require('express'),
 	
 // DB name: ldrlyTest
 var url = 'mongodb://localhost:27017/ldrlyTest';
-var port = 8000;
+var port = 8080;
 
 // One connection to rule them all 
 MongoClient.connect(url, function(getMongoErr,mongoConn){
