@@ -18,6 +18,7 @@ var express = require('express'),
 	
 // DB name: ldrlyTest
 var url = 'mongodb://localhost:27017/ldrlyTest';
+var port = 8000;
 
 // One connection to rule them all 
 MongoClient.connect(url, function(err,db){
@@ -28,6 +29,7 @@ MongoClient.connect(url, function(err,db){
 	};
 	
 	app.use( bodyParser.json() ); 
+		app.listen(port);
 	
 	app.use(function(req,res,next){
 	    req.db = db;
@@ -37,8 +39,8 @@ MongoClient.connect(url, function(err,db){
 	// Points to routes/index.js, lists valid paths
 	routes(app);
 	
-	app.listen(8000);
-	// log server started
 
+	app.listen(port);
+	console.log('The server started listening on port: '+port);
 });
 
