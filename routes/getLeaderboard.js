@@ -8,6 +8,8 @@
 /*jslint node: true */
 "use strict";
 
+var async = require('async');
+
 module.exports = exports = function(req, res){
 	// Log the leaderboard request
 	// get
@@ -16,54 +18,81 @@ module.exports = exports = function(req, res){
 	var users = req.db.collection('users');
 	var stats = req.db.collection('statColl');
 	
-	var sort = { value: -1 };
-	
-	if(typeof(req.params.limit) === "undefined") {
-		// Limit 0 is the same as having no value at all
-		req.params.limit = 0;
-	}
-	
-	// Find all values of statName, get value and uid, sort value DESC, optional limit, store as array
-	stats.find({ name: req.params.statName}, { _id: 0, value : 1, uid: 1 }).sort({ value: -1}).limit(parseInt(req.params.limit,10)).toArray(function(err,dbResponse){
-		if(err){
-			throw err;
-		}
-		
-		// debugging TODO remove
-		console.log(JSON.stringify(dbResponse));
+	async.waterfall([
+		function(getLeaderCallback){
+			
+			if(typeof(req.params.limit) === "undefined") {
+				// Limit 0 is the same as having no value at all
+				req.params.limit = 0;
+			}
+			
+			var limitInt = parseInt(req.params.limit,10);
 
-		// Create array of UIDs
-		var UIDArray = [];
-		for(var i = 0; i < dbResponse.length; i++){
-			UIDArray.push(dbResponse[i].uid);
+			if (isNaN(limitInt)){
+				return getLeaderCallback('limitNAN');
+			}
+			
+			var queryObject = { name: req.params.statName };
+			var projectionObject = { _id: 0, value : 1, uid: 1 };
+			var sortObject = { value: -1 };
+			
+			// Find all values of statName, get value and uid, sort value DESC, optional limit, store as array
+			stats.find(queryObject,projectionObject).sort(sortObject).limit(limitInt).toArray(function(findStatsErr,statArray){
+				if(findStatsErr){
+					return getLeaderCallback(findStatsErr);
+				}
+				if(statArray.length === 0){
+					return getLeaderCallback("statNotFound");
+				}
+				
+				return getLeaderCallback(null,statArray);
+			});
+			
+		},
+		function(statArray,getLeaderCallback){
+			
+			// create array of UIDs
+			var UIDArray = [];
+			for(var i = 0; i < statArray.length; i++){
+				UIDArray.push(statArray[i].uid);
+			}
+			
+			var findUserNameQuery = { uid: { $in: UIDArray } };
+			var findUserNameProj =  { _id: 0, userName: 1, uid: 1};
+			
+			// Find all usernames that match the UIDs
+			users.find(findUserNameQuery,findUserNameProj).toArray(function(findUserNameErr,findUserNameRows){
+				if(findUserNameErr){
+					return getLeaderCallback(findUserNameErr);
+				}
+				
+				if(findUserNameRows.length === 0){
+					return getLeaderCallback("noUserNameRows");
+				}
+			
+				// n^2, bad, don't hire
+				// Match UID and usernames
+				for(var k = 0 ; k<statArray.length; k++){
+					for(var j = 0; j < findUserNameRows.length; j++){
+						if(findUserNameRows[j].uid === statArray[k].uid){
+							statArray[k].userName = findUserNameRows[j].userName;
+							continue;
+						}
+					}
+					statArray[k].rank = k+1;
+				}
+				return getLeaderCallback(null,statArray);
+			});	
+		}
+	], function(gatherLeaderErr,statArray){
+		if(gatherLeaderErr){
+			res.writeHead(500, { "Content-Type": "text/html"});
+			res.end("There was an error: "+gatherLeaderErr);
+			return;
 		}
 		
-		// Find all usernames that match the UIDs
-		users.find({ uid: { $in: UIDArray } }, { _id: 0, userName: 1, uid: 1}).toArray(function(err,rows){
-			if(err){
-				throw err;
-			}
-			
-			// n^2 yo!
-			// Match UID and usernames
-			// Looking for better way of doing this, obviously
-			for(var k = 0 ; k<dbResponse.length; k++){
-				for(var j = 0; j < rows.length; j++){
-					if(rows[j].uid === dbResponse[k].uid){
-						dbResponse[k].userName = rows[j].userName;
-						continue;
-					}
-				}
-				dbResponse[k].rank = k+1;
-			}
-			
-			console.log(JSON.stringify(dbResponse));
-			
-			res.writeHead(200, { "Content-Type": "text/html"});
-			res.end(JSON.stringify(dbResponse));
-			
-		});
-		
-		
+		res.writeHead(200, { "Content-Type": "text/html"});
+		res.end(JSON.stringify(statArray));
+		return;
 	});
-}
+};
