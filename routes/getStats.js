@@ -7,41 +7,44 @@
 /*jslint node: true */
 "use strict";
 
+var async = require('async');
+
 module.exports = exports = function(req, res){
 
 	var users = req.db.collection('users');
 	
 	// Check if the userName exists in the system, if no, return error, if yes, use uid to get all stats
-	users.findOne({ userName: req.params.userName},function(err,dbResponse){
-		if(err){
-			throw err;
-		}
-		
-		// debugging, remove
-		console.log(dbResponse);
-		console.log(typeof(dbResponse));
-		
-		if (dbResponse ===  null) {
-			res.writeHead(200, {"Content-Type": "text/html"});
-			res.end("Username not found");
-			return;
-		} else {
+	async.waterfall([
+		function(getStatsCallback){
+			users.findOne({ userName: req.params.userName},function(getUIDErr,getUID){
+				if(getUIDErr){
+					return getStatsCallback(getUIDErr);
+				}
+				if(getUID === null){
+					return getStatsCallback("userNotFound");
+				}
+				return getStatsCallback(null,getUID.uid);
+			});
+				
+		}, function(uid,getStatsCallback){
+			
 			var stats = req.db.collection('statColl');
 			
-			// find all stats for username
-			stats.find({ uid: dbResponse.uid},{ _id: 0, name: 1, value: 1}).toArray(function(err,response){
-				if (err){
-					throw err;
+			stats.find({ uid: uid},{ _id: 0, name: 1, value: 1}).toArray(function(allStatsErr,allStats){
+				if (allStatsErr){
+					return getStatsCallback(allStatsErr);
 				}
-				
-				// return them
-				res.writeHead(200, { "Content-Type": "text/html"});
-				res.end(JSON.stringify(response));
-			})
-		}		
+				return getStatsCallback(null,allStats);
+			});
+		}
+	], function(getStatWaterErr,allStats){
+		if(getStatWaterErr){
+			res.writeHead(500, { "Content-Type": "text/html"});
+			res.end("There was an error: "+getStatWaterErr);
+			return;
+		}
 		
-		
-		
+		res.writeHead(200, { "Content-Type": "text/html"});
+		res.end(JSON.stringify(allStats));
 	});
-	
-}
+};
