@@ -4,7 +4,7 @@
 
 // Lists valid paths
 // 3 functions implemented
-// sendStat - POSTS new stat information
+// sendStat - POST new stat information
 // getLeaderboard - GET
 //		one required parameter (statName)
 //		one optional parameter (limit)
@@ -28,6 +28,7 @@ module.exports = exports = function(app){
 	
 	app.get('*', function (req, res) {
 		res.writeHead(404,{ "Content-Type": "text/html"});
-		res.send('Invalid path, please try again')
+		res.end('Invalid path, please try again');
+		return;
 	});
 }
