@@ -11,28 +11,28 @@ var counter = 0;
 
 // Generate usernames and stats with 50 ms delay to prevent UID collision
 
-var intervalID = setInterval( function() {
-	
-	if(counter >= 1000) {
-		clearInterval(intervalID);
-		return;
-	}
-	
-	callSendStat("Username"+Math.floor(counter/10),statNames[counter % 10]);
-	console.log("Username"+Math.floor(counter/10));
-	console.log("StatName: "+counter% 10);
-	counter++;
-	
-},50);
+//var intervalID = setInterval( function() {
+//	
+//	if(counter >= 1000) {
+//		clearInterval(intervalID);
+//		return;
+//	}
+//	
+//	callSendStat("Username"+Math.floor(counter/10),statNames[counter % 10]);
+//	console.log("Username"+Math.floor(counter/10));
+//	console.log("StatName: "+counter% 10);
+//	counter++;
+//	
+//},100);
 
 //Uncomment to test one entry
-//callSendStat("Billy","jumps");
+callSendStat("Billy","jumps");
 
 function callSendStat(userName,statName) {
 
 	var options = {
-		host: 'localhost',
-		port: 8000,
+		host: '54.218.186.53',
+		port: 8080,
 		path: '/sendStat',
 		method: 'POST',
 		headers: { "content-type": 'application/json'}
